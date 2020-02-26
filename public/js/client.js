@@ -17,12 +17,11 @@ socket.on('chat message', (msg) => {
 });
 
 socket.on('move-made', (data) => {
-    console.log("move received");
-    console.log(data);
     $('#' + data.position).text(data.symbol);
+    $('#message').text('');
 });
 
-const startGame = () => {
-    console.log(socket);
-    socket.emit('join', {id: socket.id});
-};
+socket.on('invalid-move', (msg) => {
+    console.log("invalid move");
+    $('#message').text(msg);
+});

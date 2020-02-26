@@ -7,7 +7,7 @@ const path      = require('path');
 const Game      = require('./models/game');
 const root      = path.join(__dirname, "public");
 
-const symbol = ["#", "0"];
+const symbol = ["#", "O"];
 
 app.use(express.static(root));
 app.get('/' , (req, res) => {
@@ -15,7 +15,6 @@ app.get('/' , (req, res) => {
 });
 
 app.get('/game' , (req, res) => {
-    console.log('game route');
     res.sendFile('game.html', {root});
 });
 
@@ -27,42 +26,42 @@ let rooms = [];
 let playerCount = 0;
 io.on('connection', (socket) => {
     console.log('User connected with socket id', socket.id);
-    var game;
+    let game;
     socket.on('join', (msg) => {
         playerCount++;
-        console.log("Message", msg);
-        console.log('Player Joined with socket id', socket.id);
-        console.log(playerCount);
         if (playerCount > 0 && playerCount <= 2) {
-            console.log("inside if block");
             if (rooms.length === 0) {
                 game = new Game();
                 rooms.push(game);
             } else {
                 game = rooms[rooms.length - 1];
             }
-            game.addPlayer(socket.id, socket, symbol[playerCount-1]);
-            console.log("Players count",game.getPlayersCount());
+            game.addPlayer(socket.id, playerCount ,socket, symbol[playerCount-1]);
             if (game.getPlayersCount() === 2) {
                 console.log("Game started")
             }
         }
     });
     socket.on('make-move', (data) => {
-        console.log("Move made by " + socket.id);
-        if (game.getCurrentPlayer() === socket.id) {
-            console.log("Invalid move");
-            socket.emit('invalid-move', 'Your Opponents Turn');
-        } else {
-            if (game.getPositions().length === 0 || game.getPositions().indexOf(data.position) !== -1) {
-                console.log("Move made by " + socket.id);
+        console.log("Player count", game.getCurrentPlayer().count);
+        if (game.getCurrentPlayer().id === socket.id) {
+            if (game.getPositions().indexOf(data.position) === -1) {
                 game.addPosition(data.position);
-                game.setCurrentPlayer(socket.id);
-                socket.emit('move-made', {
+                const symbol = game.getPlayer(game.getCurrentPlayer().id).symbol;
+                game.getCurrentPlayerSocket().emit('move-made', {
                     position: data.position,
-                    symbol: game.getPlayer(game.getCurrentPlayer()).symbol
+                    symbol: symbol
                 });
+                game.getOppositionSocket().emit('move-made', {
+                    position: data.position,
+                    symbol: symbol
+                });
+                game.changeTurn();
+            } else {
+                console.log("Position already clicked");
             }
+        } else {
+            socket.emit('invalid-move', 'Your Opponents Turn');
         }
         socket.emit();
     });
@@ -70,6 +69,9 @@ io.on('connection', (socket) => {
         console.log(socket.id, 'disconnected');
         if (playerCount > 0) {
             playerCount--;
+        }
+        if (playerCount == 0) {
+            game = undefined;
         }
     });
 });
