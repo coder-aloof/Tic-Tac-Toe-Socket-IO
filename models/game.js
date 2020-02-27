@@ -1,11 +1,19 @@
 const Player = require("./player");
+const reducer = (accumulator, currentvalue) => accumulator + currentvalue;
 
 function Game() {
     this.players = [];
     this.positions = [];
     this.turn = 0;
-    this.addPlayer = (id, count, socket, symbol) => {
-        this.players.push(new Player(id, count, socket, symbol));
+    this.boardSize = 3;
+    this.board = [
+        [0, 0, 0],
+        [0, 0, 0],
+        [0, 0, 0]
+    ];
+    this.live = true;
+    this.addPlayer = (id, count, socket, symbol, number) => {
+        this.players.push(new Player(id, count, socket, symbol, number));
     };
     this.getPlayersCount = () => {
         return this.players.length;
@@ -20,14 +28,9 @@ function Game() {
         return this.players[this.turn];
     };
     this.getCurrentPlayerSocket = () => {
-        console.log("Current Socket");
         return this.players[this.turn].socket;
     };
-    this.getOpposition = () => {
-        return this.players[1 - this.turn];
-    };
     this.getOppositionSocket = () => {
-        console.log("Opposition socket");
         return this.players[1 - this.turn].socket;
     };
     this.changeTurn = () => {
@@ -35,6 +38,50 @@ function Game() {
     };
     this.getPlayer = (id) => {
         return this.players.find(player => player.id === id);
+    };
+    this.updateBoard = (position, value) => {
+        let i = Math.floor(position/this.boardSize);
+        let j = position % 3;
+        this.board[i][j] = value;
+        let result1 = this.boardSum(i) && this.boardSum(j);
+        let result2 = this.diagonalSum();
+        return result1 || result2;
+    };
+    this.boardSum = (k) => {
+        let sum = this.board[k].reduce(reducer);
+        if (sum === 3 || sum === -3) {
+            return true;
+        } else {
+            return false;
+        }
+    };
+    this.diagonalSum = () => {
+        let diagonal = 0, crossDiagonal = 0;
+        for (let row = 0; row < this.board.length; row++) {
+            diagonal += this.board[row][row];
+            crossDiagonal += this.board[row][this.board.length - row - 1];
+        }
+        if (diagonal == 3 || diagonal == -3) {
+            this.live = false;
+            return true;
+        }
+        else if (crossDiagonal == 3 || crossDiagonal == -3) {
+            this.live = false;
+            return true;
+        } else {
+            return false;
+        }
+    };
+    this.checkDraw = () => {
+        if (this.positions.length === this.boardSize * this.boardSize) {
+            this.live = false;
+            return true;
+        } else {
+            return false;
+        }
+    };
+    this.checkLive = () => {
+        return this.live;
     };
 }
 

@@ -8,13 +8,10 @@ const Game      = require('./models/game');
 const root      = path.join(__dirname, "public");
 
 const symbol = ["#", "O"];
+const numbers = [1, 0];
 
 app.use(express.static(root));
 app.get('/' , (req, res) => {
-    res.sendFile('index.html', {root});
-});
-
-app.get('/game' , (req, res) => {
     res.sendFile('index.html', {root});
 });
 
@@ -36,15 +33,17 @@ io.on('connection', (socket) => {
             } else {
                 game = rooms[rooms.length - 1];
             }
-            game.addPlayer(socket.id, playerCount ,socket, symbol[playerCount-1]);
+            game.addPlayer(socket.id, playerCount ,socket, symbol[playerCount-1], numbers[playerCount-1]);
             if (game.getPlayersCount() === 2) {
                 console.log("Game started")
             }
         }
     });
     socket.on('make-move', (data) => {
-        console.log("Player count", game.getCurrentPlayer().count);
-        if (game.getCurrentPlayer().id === socket.id) {
+        if (!game.checkLive()) {
+            // do nothing
+        }
+        else if (game.getCurrentPlayer().id === socket.id) {
             if (game.getPositions().indexOf(data.position) === -1) {
                 game.addPosition(data.position);
                 const symbol = game.getPlayer(game.getCurrentPlayer().id).symbol;
@@ -56,6 +55,14 @@ io.on('connection', (socket) => {
                     position: data.position,
                     symbol: symbol
                 });
+                if (game.updateBoard(data.position, game.getCurrentPlayer().number)) {
+                    game.getCurrentPlayerSocket().emit('result', 'You Win');
+                    game.getOppositionSocket().emit('result', 'You Lost');
+                }
+                if (game.checkDraw()) {
+                    game.getCurrentPlayerSocket().emit('result', 'Draw');
+                    game.getOppositionSocket().emit('result', 'Draw');
+                }
                 game.changeTurn();
             } else {
                 console.log("Position already clicked");
