@@ -12,16 +12,15 @@ $('.tic').click( function(e) {
     });
 });
 
-socket.on('chat message', (msg) => {
-    $('#messages').append($('<li>').text(msg));
-});
-
 socket.on('move-made', (data) => {
     $('#' + data.position).text(data.symbol);
     $('#message').text('');
 });
 
 socket.on('invalid-move', (msg) => {
-    console.log("invalid move");
+    $('#message').text(msg);
+});
+
+socket.on('result', (msg) => {
     $('#message').text(msg);
 });
