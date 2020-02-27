@@ -43,7 +43,6 @@ function Game() {
         let i = Math.floor(position/this.boardSize);
         let j = position % 3;
         this.board[i][j] = value;
-        console.log(this.board);
         let result1 = this.boardRowSum(i) || this.boardColumnSum(j);
         let result2 = this.diagonalSum();
         return result1 || result2;

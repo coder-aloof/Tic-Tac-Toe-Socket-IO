@@ -24,3 +24,11 @@ socket.on('invalid-move', (msg) => {
 socket.on('result', (msg) => {
     $('#message').text(msg);
 });
+
+socket.on('message', (msg) => {
+    $('#message').text(msg);
+});
+
+socket.on('empty-message', (msg) => {
+    $('#message').text(msg);
+});

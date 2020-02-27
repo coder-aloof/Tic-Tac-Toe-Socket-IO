@@ -21,9 +21,10 @@ server.listen(port, () => {
 
 let rooms = [];
 let playerCount = 0;
+
 io.on('connection', (socket) => {
-    console.log('User connected with socket id', socket.id);
     let game;
+    console.log('User connected with socket id', socket.id);
     socket.on('join', (msg) => {
         playerCount++;
         if (playerCount > 0 && playerCount <= 2) {
@@ -33,10 +34,15 @@ io.on('connection', (socket) => {
             } else {
                 game = rooms[rooms.length - 1];
             }
-            game.addPlayer(socket.id, playerCount ,socket, symbol[playerCount-1], numbers[playerCount-1]);
+            game.addPlayer(socket.id, socket, symbol[playerCount-1], numbers[playerCount-1]);
             if (game.getPlayersCount() === 2) {
-                console.log("Game started")
+                game.getCurrentPlayerSocket().emit('empty-message', '');
+                game.getOppositionSocket().emit('empty-message', '');
+                playerCount = 0;
             }
+        }
+        if (playerCount === 1) {
+            socket.emit('message', 'Waiting for Player');
         }
     });
     socket.on('make-move', (data) => {
