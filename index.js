@@ -15,7 +15,7 @@ app.get('/' , (req, res) => {
 });
 
 app.get('/game' , (req, res) => {
-    res.sendFile('game.html', {root});
+    res.sendFile('index.html', {root});
 });
 
 server.listen(port, () => {
