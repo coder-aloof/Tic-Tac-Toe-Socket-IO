@@ -8,7 +8,7 @@ const Game      = require('./models/game');
 const root      = path.join(__dirname, "public");
 
 const symbol = ["#", "O"];
-const numbers = [1, 0];
+const numbers = [1, -1];
 
 app.use(express.static(root));
 app.get('/' , (req, res) => {
@@ -46,7 +46,7 @@ io.on('connection', (socket) => {
         else if (game.getCurrentPlayer().id === socket.id) {
             if (game.getPositions().indexOf(data.position) === -1) {
                 game.addPosition(data.position);
-                const symbol = game.getPlayer(game.getCurrentPlayer().id).symbol;
+                const symbol = game.getCurrentPlayer().symbol;
                 game.getCurrentPlayerSocket().emit('move-made', {
                     position: data.position,
                     symbol: symbol

@@ -43,13 +43,27 @@ function Game() {
         let i = Math.floor(position/this.boardSize);
         let j = position % 3;
         this.board[i][j] = value;
-        let result1 = this.boardSum(i) && this.boardSum(j);
+        console.log(this.board);
+        let result1 = this.boardRowSum(i) || this.boardColumnSum(j);
         let result2 = this.diagonalSum();
         return result1 || result2;
     };
-    this.boardSum = (k) => {
+    this.boardRowSum = (k) => {
         let sum = this.board[k].reduce(reducer);
         if (sum === 3 || sum === -3) {
+            this.live = false;
+            return true;
+        } else {
+            return false;
+        }
+    };
+    this.boardColumnSum = (k) => {
+        let sum = 0;
+        for (let idx = 0; idx < this.board.length; idx++) {
+            sum += this.board[idx][k];
+        }
+        if (sum === 3 || sum === -3) {
+            this.live = false;
             return true;
         } else {
             return false;
