@@ -1,11 +1,12 @@
-const express   = require('express');
-const app       = express();
-const server    = require('http').createServer(app);
-const io        = require('socket.io')(server);
-const port      = process.env.PORT || 3000;
-const path      = require('path');
-const Game      = require('./models/game');
-const root      = path.join(__dirname, "public");
+const express = require('express');
+const app = express();
+const server = require('http').createServer(app);
+const io = require('socket.io')(server);
+const port = process.env.PORT || 3000;
+const path = require('path');
+const Game = require('./models/game');
+const root = path.join(__dirname, "public");
+const uuid = require('uuid/v4');
 
 const symbol = ["#", "O"];
 const numbers = [1, -1];
@@ -19,35 +20,32 @@ server.listen(port, () => {
     console.log('listening on Port : ', port);
 });
 
-let rooms = [];
-let playerCount = 0;
+let games = [];
 
 io.on('connection', (socket) => {
     let game;
-    console.log('User connected with socket id', socket.id);
-    socket.on('join', (msg) => {
-        playerCount++;
-        if (playerCount > 0 && playerCount <= 2) {
-            if (rooms.length === 0) {
-                game = new Game();
-                rooms.push(game);
-            } else {
-                game = rooms[rooms.length - 1];
-            }
-            game.addPlayer(socket.id, socket, symbol[playerCount-1], numbers[playerCount-1]);
-            if (game.getPlayersCount() === 2) {
-                game.getCurrentPlayerSocket().emit('empty-message', '');
-                game.getOppositionSocket().emit('empty-message', '');
-                playerCount = 0;
-            }
+    socket.on('join', () => {
+        if (games.length === 0 || games[games.length-1].getPlayersCount() === 2) {
+            game = new Game(uuid());
+            games.push(game);
+        } else {
+            game = games[games.length - 1];
         }
-        if (playerCount === 1) {
+        socket.roomId = game.getRoomId();
+        socket.join(socket.roomId);
+        game.addPlayer(socket.id, socket, symbol[game.getPlayersCount()], numbers[game.getPlayersCount()]);
+        if (game.getPlayersCount() === 2) {
+            io.to(socket.roomId).emit('empty-message', 'Game Starts');
+            game.setStatus(1); // In progress
+        }
+        if (game.getPlayersCount() === 1) {
             socket.emit('message', 'Waiting for Player');
         }
     });
     socket.on('make-move', (data) => {
-        if (!game.checkLive()) {
-            // do nothing
+        console.log(`Game status ${game.getStatus()}`);
+        if (game.getStatus() === 2) {
+            console.log(`Winner is ${game.getWinner().id}`);
         }
         else if (game.getCurrentPlayer().id === socket.id) {
             if (game.getPositions().indexOf(data.position) === -1) {
@@ -66,8 +64,7 @@ io.on('connection', (socket) => {
                     game.getOppositionSocket().emit('result', 'You Lost');
                 }
                 if (game.checkDraw()) {
-                    game.getCurrentPlayerSocket().emit('result', 'Draw');
-                    game.getOppositionSocket().emit('result', 'Draw');
+                    io.to(socket.roomId).emit('result', 'Draw');
                 }
                 game.changeTurn();
             } else {
@@ -76,15 +73,15 @@ io.on('connection', (socket) => {
         } else {
             socket.emit('invalid-move', 'Your Opponents Turn');
         }
-        socket.emit();
     });
     socket.on('disconnect', () => {
         console.log(socket.id, 'disconnected');
-        if (playerCount > 0) {
-            playerCount--;
-        }
-        if (playerCount == 0) {
-            game = undefined;
+        socket.leave(socket.roomId);
+        if (game.getStatus() !== 2) {
+            game.playerLeft(socket, true);
+            io.to(socket.roomId).emit('result', 'Opponent Left! You Win');
+        } else {
+            game.playerLeft(socket, false);
         }
     });
 });

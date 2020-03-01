@@ -1,19 +1,26 @@
 const Player = require("./player");
-const reducer = (accumulator, currentvalue) => accumulator + currentvalue;
+const reducer = (accumulator, currentValue) => accumulator + currentValue;
 
-function Game() {
+function Game(roomId) {
+    this.roomId = roomId;
     this.players = [];
     this.positions = [];
     this.turn = 0;
     this.boardSize = 3;
+    this.currentPlayers = 0;
     this.board = [
         [0, 0, 0],
         [0, 0, 0],
         [0, 0, 0]
     ];
-    this.live = true;
+    this.status = 0; // { 0: Not Yet Started, 1: Game in progress, 2: Game over}
+    this.winner = undefined;  // update to Player object when a player wins of remains undefined in case of a draw
+    this.getRoomId = () => {
+        return this.roomId;
+    };
     this.addPlayer = (id, count, socket, symbol, number) => {
         this.players.push(new Player(id, count, socket, symbol, number));
+        this.currentPlayers++;
     };
     this.getPlayersCount = () => {
         return this.players.length;
@@ -27,6 +34,9 @@ function Game() {
     this.getCurrentPlayer = () => {
         return this.players[this.turn];
     };
+    this.getOpposition = () => {
+        return this.players[1 - this.turn];
+    };
     this.getCurrentPlayerSocket = () => {
         return this.players[this.turn].socket;
     };
@@ -35,9 +45,6 @@ function Game() {
     };
     this.changeTurn = () => {
         this.turn = 1 - this.turn;
-    };
-    this.getPlayer = (id) => {
-        return this.players.find(player => player.id === id);
     };
     this.updateBoard = (position, value) => {
         let i = Math.floor(position/this.boardSize);
@@ -50,7 +57,8 @@ function Game() {
     this.boardRowSum = (k) => {
         let sum = this.board[k].reduce(reducer);
         if (sum === 3 || sum === -3) {
-            this.live = false;
+            this.setStatus(2);
+            this.setWinner(this.getCurrentPlayer());
             return true;
         } else {
             return false;
@@ -62,7 +70,8 @@ function Game() {
             sum += this.board[idx][k];
         }
         if (sum === 3 || sum === -3) {
-            this.live = false;
+            this.setStatus(2);
+            this.setWinner(this.getCurrentPlayer());
             return true;
         } else {
             return false;
@@ -75,11 +84,13 @@ function Game() {
             crossDiagonal += this.board[row][this.board.length - row - 1];
         }
         if (diagonal == 3 || diagonal == -3) {
-            this.live = false;
+            this.setStatus(2);
+            this.setWinner(this.getCurrentPlayer());
             return true;
         }
         else if (crossDiagonal == 3 || crossDiagonal == -3) {
-            this.live = false;
+            this.setStatus(2);
+            this.setWinner(this.getCurrentPlayer());
             return true;
         } else {
             return false;
@@ -87,14 +98,34 @@ function Game() {
     };
     this.checkDraw = () => {
         if (this.positions.length === this.boardSize * this.boardSize) {
-            this.live = false;
+            this.setStatus(2);
             return true;
         } else {
             return false;
         }
     };
-    this.checkLive = () => {
-        return this.live;
+    this.getStatus = () => {
+        return this.status;
+    };
+    this.setStatus = (sts) => {
+        this.status = sts;
+    };
+    this.getWinner = () => {
+        return this.winner;
+    };
+    this.setWinner = (winner) => {
+        this.winner = winner;
+    };
+    this.playerLeft = (socket, flag) => {
+        if (flag) {
+            if (this.getCurrentPlayer().id == socket.id) {
+                this.setWinner(this.getOpposition());
+            } else {
+                this.setWinner(this.getCurrentPlayer());
+            }
+            this.setStatus(2);
+        }
+        this.currentPlayers--;
     };
 }
 
