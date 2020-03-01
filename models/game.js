@@ -7,7 +7,7 @@ function Game(roomId) {
     this.positions = [];
     this.turn = 0;
     this.boardSize = 3;
-    this.currentPlayers = 0;
+    this.currentPlayersCount = 0;
     this.board = [
         [0, 0, 0],
         [0, 0, 0],
@@ -20,7 +20,7 @@ function Game(roomId) {
     };
     this.addPlayer = (id, count, socket, symbol, number) => {
         this.players.push(new Player(id, count, socket, symbol, number));
-        this.currentPlayers++;
+        this.currentPlayersCount++;
     };
     this.getPlayersCount = () => {
         return this.players.length;
@@ -36,12 +36,6 @@ function Game(roomId) {
     };
     this.getOpposition = () => {
         return this.players[1 - this.turn];
-    };
-    this.getCurrentPlayerSocket = () => {
-        return this.players[this.turn].socket;
-    };
-    this.getOppositionSocket = () => {
-        return this.players[1 - this.turn].socket;
     };
     this.changeTurn = () => {
         this.turn = 1 - this.turn;
@@ -116,6 +110,9 @@ function Game(roomId) {
     this.setWinner = (winner) => {
         this.winner = winner;
     };
+    this.getCurrentPlayersCount = () => {
+        return this.currentPlayersCount;
+    };
     this.playerLeft = (socket, flag) => {
         if (flag) {
             if (this.getCurrentPlayer().id == socket.id) {
@@ -125,7 +122,7 @@ function Game(roomId) {
             }
             this.setStatus(2);
         }
-        this.currentPlayers--;
+        this.currentPlayersCount--;
     };
 }
 
