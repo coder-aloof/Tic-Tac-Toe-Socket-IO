@@ -47,6 +47,9 @@ io.on('connection', (socket) => {
         if (game.getStatus() === 2) {
             console.log(`Winner is ${game.getWinner().id}`);
         }
+        else if (game.getStatus() === 0) {
+            socket.emit('message', 'Please Wait');
+        }
         else if (game.getCurrentPlayer().id === socket.id) {
             if (game.getPositions().indexOf(data.position) === -1) {
                 game.addPosition(data.position);
