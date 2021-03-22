@@ -8,7 +8,7 @@ const Game = require('./models/game');
 const root = path.join(__dirname, "public");
 const uuid = require('uuid/v4');
 
-const symbol = ["#", "O"];
+const symbol = ["X", "O"];
 const numbers = [1, -1];
 
 app.use(express.static(root));
